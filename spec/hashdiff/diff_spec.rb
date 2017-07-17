@@ -139,6 +139,54 @@ describe HashDiff do
     diff.should == [["~", "b", {"b1"=>1, "b2"=>2}, nil]]
   end
 
+  it "should be able to diff strings vs. symbols indifferently" do
+    a = {"a" => 1, :b  => {"b1" => 1, "b2" =>2}, :c => 3}
+    b = {"a" => 1, "b" => {"b1" => 1, :b2  =>2}, :c => 4}
+
+    diff = HashDiff.diff(a, b, { :indifferent => :keys })
+    diff.should == [["~", "c", 3, 4]]
+  end
+
+  it "should be able to diff strings vs. symbols non-indifferently" do
+    a = {"a" => 1, :b  => {"b1" => 1, "b2" =>2}, :c => 3}
+    b = {"a" => 1, "b" => {"b1" => 1, :b2  =>2}, :c => 4}
+
+    diff = HashDiff.diff(a, b, { :indifferent => nil })
+    diff.should == [["-", "b", {"b1" => 1, "b2" => 2}],
+                    ["~", "c", 3, 4],
+                    ["+", "b", {"b1" => 1, :b2  => 2}]]
+  end
+
+  it "should indifferently report key differences as strings" do
+    a = {:a => 1, :b => { :b1 => 1, :b2 => 2 }, :c => "3", 12 => 3.4}
+    b = {:a => 2, :b => { :b3 => 3, :b4 => 4 }, :c => "4", 56 => 7.8}
+
+    diff = HashDiff.diff(a, b, { :indifferent => :keys })
+    diff.should == [["-", "12", 3.4],
+                    ["~", "a", 1, 2],
+                    ["-", "b.b1", 1],
+                    ["-", "b.b2", 2],
+                    ["+", "b.b3", 3],
+                    ["+", "b.b4", 4],
+                    ["~", "c", "3", "4"],
+                    ["+", "56", 7.8]]
+  end
+
+  it "should non-indifferently report key differences as string" do
+    a = {:a => 1, :b => { :b1 => 1, :b2 => 2 }, :c => "3", 12 => 3.4}
+    b = {:a => 2, :b => { :b3 => 3, :b4 => 4 }, :c => "4", 56 => 7.8}
+
+    diff = HashDiff.diff(a, b, { :indifferent => :keys })
+    diff.should == [["-", "12", 3.4],
+                    ["~", "a", 1, 2],
+                    ["-", "b.b1", 1],
+                    ["-", "b.b2", 2],
+                    ["+", "b.b3", 3],
+                    ["+", "b.b4", 4],
+                    ["~", "c", "3", "4"],
+                    ["+", "56", 7.8]]
+  end
+
   it "should be able to diff similar objects in array" do
     a = [{'a' => 1, 'b' => 2, 'c' => 3, 'd' => 4, 'e' => 5}, 3]
     b = [1, {'a' => 1, 'b' => 2, 'c' => 3, 'e' => 5}]

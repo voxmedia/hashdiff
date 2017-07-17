@@ -11,6 +11,7 @@ module HashDiff
   #   * :delimiter (String) ['.'] the delimiter used when returning nested key references
   #   * :numeric_tolerance (Numeric) [0] should be a positive numeric value.  Value by which numeric differences must be greater than.  By default, numeric values are compared exactly; with the :tolerance option, the difference between numeric values must be greater than the given value.
   #   * :strip (Boolean) [false] whether or not to call #strip on strings before comparing
+  #   * :indifferent (Symbol) [nil] which data, if any, to simulate indifferent_access with: either nil, or :keys for Hash keys
   #
   # @yield [path, value1, value2] Optional block is used to compare each value, instead of default #==. If the block returns value other than true of false, then other specified comparison options will be used to do the comparison.
   #
@@ -53,6 +54,7 @@ module HashDiff
   #   * :delimiter (String) ['.'] the delimiter used when returning nested key references
   #   * :numeric_tolerance (Numeric) [0] should be a positive numeric value.  Value by which numeric differences must be greater than.  By default, numeric values are compared exactly; with the :tolerance option, the difference between numeric values must be greater than the given value.
   #   * :strip (Boolean) [false] whether or not to call #strip on strings before comparing
+  #   * :indifferent (Symbol) [nil] which data, if any, to simulate indifferent_access with: either nil, or :keys for Hash keys
   #
   # @yield [path, value1, value2] Optional block is used to compare each value, instead of default #==. If the block returns value other than true of false, then other specified comparison options will be used to do the comparison.
   #
@@ -74,8 +76,11 @@ module HashDiff
       :delimiter   =>   '.',
       :strict      =>   true,
       :strip       =>   false,
+      :indifferent =>   nil,
       :numeric_tolerance => 0
     }.merge!(options)
+
+    require 'active_support/core_ext/hash/indifferent_access' if opts[:indifferent]
 
     opts[:comparison] = block if block_given?
 
@@ -122,6 +127,14 @@ module HashDiff
         prefix = "#{opts[:prefix]}#{opts[:delimiter]}"
       end
 
+      obj1_keys = obj1.keys
+      obj2_keys = obj2.keys
+      if opts[:indifferent] == :keys
+        obj1_keys = obj1_keys.map { |k| k.is_a?(Symbol) ? k.to_s : k }
+        obj2_keys = obj2_keys.map { |k| k.is_a?(Symbol) ? k.to_s : k }
+        obj1 = obj1.with_indifferent_access
+        obj2 = obj2.with_indifferent_access
+      end
       deleted_keys = obj1.keys - obj2.keys
       common_keys = obj1.keys & obj2.keys
       added_keys = obj2.keys - obj1.keys
